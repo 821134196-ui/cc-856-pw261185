@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>分区下钻 · Zoned Slice Lab</title>
+  <link rel="stylesheet" href="/app.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%232a78d6'/><path d='M4 8h8M8 4v8' stroke='white' stroke-width='1.6'/></svg>">
+</head>
+<body>
+  <div class="wrap">
+    <header class="topbar">
+      <div class="brand">
+        <h1>分区下钻</h1>
+        <span class="sub">一个 UTC 日分区 · 本地日切片 · 聚合与逐行核对</span>
+      </div>
+      <div class="spacer"></div>
+      <div class="chips" id="runtime-chips"></div>
+      <button class="ghost" id="theme-toggle" type="button">深色</button>
+    </header>
+
+    <nav class="crumbs" id="crumbs" aria-label="位置"></nav>
+
+    <section class="control-row" aria-label="日期导航" style="margin-top:0">
+      <div class="day-nav">
+        <button class="ghost" id="prev-day" type="button" aria-label="前一天">←</button>
+        <div class="day-title" id="day-title">—</div>
+        <button class="ghost" id="next-day" type="button" aria-label="后一天">→</button>
+      </div>
+      <div class="chips" id="day-badges" style="margin-left:4px"></div>
+      <div class="spacer" style="flex:1"></div>
+      <div class="field">
+        <label for="zone">时区</label>
+        <select id="zone"></select>
+      </div>
+      <div class="field">
+        <label for="policy">重复时刻策略</label>
+        <select id="policy"></select>
+      </div>
+    </section>
+
+    <div class="kpis" id="kpis"></div>
+
+    <div class="split" style="margin-top:18px">
+      <section class="card" aria-label="分区概况">
+        <div class="card-head">
+          <h2>物理分区</h2>
+          <span class="hint" id="partition-hint"></span>
+        </div>
+        <div class="card-body">
+          <div id="partition-facts"></div>
+        </div>
+      </section>
+
+      <section class="card" aria-label="查询覆盖">
+        <div class="card-head">
+          <h2>本查询在该分区的覆盖</h2>
+          <span class="hint" id="selection-hint"></span>
+        </div>
+        <div class="card-body">
+          <div id="selection"></div>
+        </div>
+      </section>
+    </div>
+
+    <section class="card" style="margin-top:18px" aria-label="本地日解剖">
+      <div class="card-head">
+        <h2>相邻本地日解剖</h2>
+        <span class="hint">本地日长、日首日尾、午夜是否存在 / 是否出现两次</span>
+      </div>
+      <div class="card-body">
+        <div class="anatomy" id="anatomy"></div>
+        <div id="transitions" style="margin-top:14px"></div>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:18px" aria-label="按小时分布">
+      <div class="card-head">
+        <h2>小时分布：UTC 视角 vs 本地视角</h2>
+        <span class="hint" id="hours-hint"></span>
+        <div class="spacer"></div>
+        <button class="ghost" id="hours-view-toggle" type="button" aria-pressed="false">表格视图</button>
+      </div>
+      <div class="card-body">
+        <div id="hours-charts"></div>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:18px" aria-label="对账">
+      <div class="card-head">
+        <h2>三方对账</h2>
+        <span class="hint">分区清单（manifest） · 分钟桶（buckets） · 逐行扫描（row scan）</span>
+      </div>
+      <div class="card-body">
+        <div id="reconciliation"></div>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:18px" aria-label="边界行">
+      <div class="card-head">
+        <h2>分区边界行</h2>
+        <span class="hint">按 ts_us 排序的首 / 末三行，附本地时间与偏移</span>
+      </div>
+      <div class="card-body">
+        <div class="boundary-grid" id="boundary"></div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <span>分区 = 一个 UTC 日；本地日可能跨两个分区，或在一个分区里只占一部分</span>
+      <span>时区数据：<span class="mono" id="f-tz">—</span></span>
+    </footer>
+  </div>
+
+  <script type="module" src="/drill.js"></script>
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Zoned Slice Lab · 分区裁剪实验台</title>
+  <link rel="stylesheet" href="/app.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%232a78d6'/><path d='M4 8h8M8 4v8' stroke='white' stroke-width='1.6'/></svg>">
+</head>
+<body>
+  <div class="wrap">
+    <header class="topbar">
+      <div class="brand">
+        <h1>Zoned Slice Lab</h1>
+        <span class="sub">带时区日期条件 · 按天分区裁剪实验台</span>
+      </div>
+      <div class="spacer"></div>
+      <div class="chips" id="runtime-chips"></div>
+      <button class="ghost" id="theme-toggle" type="button">深色</button>
+    </header>
+
+    <section class="control-row" aria-label="查询控件">
+      <div class="field">
+        <label for="zone">查询时区</label>
+        <select id="zone"></select>
+      </div>
+      <div class="field">
+        <label for="policy">重复时刻策略</label>
+        <select id="policy"></select>
+      </div>
+      <div class="field">
+        <label>解释方式</label>
+        <div class="seg" id="mode-seg" role="group" aria-label="解释方式">
+          <button type="button" data-mode="zoned" aria-pressed="true">时区感知</button>
+          <button type="button" data-mode="naive" aria-pressed="false">按 UTC 直读</button>
+        </div>
+      </div>
+      <div class="spacer" style="flex:1"></div>
+      <label class="check"><input type="checkbox" id="verify" checked> 运行一致性核对</label>
+      <label class="check"><input type="checkbox" id="fullscan" checked> 同时跑全表扫描基线</label>
+      <button class="primary" id="run" type="button">执行查询</button>
+    </section>
+
+    <section class="card" aria-label="表达式">
+      <div class="card-head">
+        <h2>谓词</h2>
+        <span class="hint">local_date / local_ts / ts · DATE / WALL / TS / AT 字面量</span>
+        <div class="spacer"></div>
+        <span class="hint" id="expr-status"></span>
+      </div>
+      <div class="card-body">
+        <div class="expr-box">
+          <textarea class="expr" id="expr" spellcheck="false" aria-label="谓词表达式"></textarea>
+          <div class="expr-error" id="expr-error" role="alert"></div>
+          <div class="expr-actions">
+            <div class="presets" id="presets"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="kpis" id="kpis" style="margin-top:18px"></div>
+
+    <div class="split" style="margin-top:18px">
+      <section class="card" aria-label="分区选择">
+        <div class="card-head">
+          <h2>实际扫描的分区</h2>
+          <span class="hint" id="partition-hint"></span>
+          <div class="spacer"></div>
+          <button class="ghost" id="map-view-toggle" type="button" aria-pressed="false">表格视图</button>
+        </div>
+        <div class="card-body">
+          <div id="map-host">
+            <div class="map-scroll"><div class="map" id="map" role="img" aria-label="全年 UTC 分区覆盖热力图"></div></div>
+            <div class="legend-row" id="map-legend"></div>
+          </div>
+          <div id="map-table-host" hidden></div>
+        </div>
+      </section>
+
+      <section class="card" aria-label="区间">
+        <div class="card-head">
+          <h2>UTC 区间集</h2>
+          <span class="hint" id="interval-hint"></span>
+        </div>
+        <div class="card-body">
+          <div class="intervals" id="intervals"></div>
+          <div id="interval-notes" style="margin-top:14px"></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="split" style="margin-top:18px">
+      <section class="card" aria-label="谓词分解">
+        <div class="card-head">
+          <h2>谓词分解</h2>
+          <span class="hint">节点 → 精确 UTC 区间</span>
+        </div>
+        <div class="card-body">
+          <div class="ast" id="ast"></div>
+        </div>
+      </section>
+
+      <section class="card" aria-label="一致性核对">
+        <div class="card-head">
+          <h2>一致性核对</h2>
+          <span class="hint" id="verify-hint"></span>
+        </div>
+        <div class="card-body">
+          <div id="verify-body"></div>
+        </div>
+      </section>
+    </div>
+
+    <section class="card" style="margin-top:18px" aria-label="命中行">
+      <div class="card-head">
+        <h2>命中行</h2>
+        <span class="hint" id="rows-hint"></span>
+        <div class="spacer"></div>
+        <button class="ghost" id="copy-link" type="button">复制查询链接</button>
+      </div>
+      <div class="card-body tight" style="padding:0">
+        <div class="table-scroll">
+          <table id="rows-table">
+            <thead>
+              <tr>
+                <th class="num">id</th>
+                <th>UTC</th>
+                <th>本地时间</th>
+                <th>分区</th>
+                <th>服务</th>
+                <th>级别</th>
+                <th class="num">延迟 ms</th>
+                <th class="num">字节</th>
+                <th>消息</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="rows-body"></tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="rows-empty" hidden>没有命中的行</div>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:18px" aria-label="诊断">
+      <div class="card-head">
+        <h2>诊断与差异</h2>
+        <span class="hint">时区跳变、边界日、与朴素实现的差异</span>
+      </div>
+      <div class="card-body">
+        <div id="diagnostics"></div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <span>数据：2026 全年，365 个 UTC 日分区</span>
+      <span>时区数据：<span class="mono" id="f-tz">—</span></span>
+      <span>分区页：在命中行中点击“下钻”查看当日分区的逐行与聚合核对</span>
+    </footer>
+  </div>
+
+  <script type="module" src="/main.js"></script>
+</body>
+</html>

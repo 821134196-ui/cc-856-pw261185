@@ -1,0 +1,16 @@
+{
+  "name": "zoned-slice-lab",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Local query workbench for zoned date predicates over UTC day partitions",
+  "engines": {
+    "node": ">=22.5"
+  },
+  "scripts": {
+    "start": "node server/index.mjs",
+    "dev": "node --watch server/index.mjs",
+    "seed": "node server/seed.mjs --reset",
+    "test": "node --test test/*.test.mjs"
+  }
+}
